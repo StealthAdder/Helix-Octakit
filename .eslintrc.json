@@ -27,7 +27,7 @@
     "no-unsafe-optional-chaining": "off",
     "no-shadow": "off",
     "dot-notation": "off",
-    "no-console": "warn",
+    "no-console": "off",
     "no-tabs": "off",
     "no-plusplus": "off"
   }

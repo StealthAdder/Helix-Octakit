@@ -1,50 +1,61 @@
-import http from 'http';
 import { App, createNodeMiddleware } from "@octokit/app";
+import express, { Request, Response } from "express";
+import config from "./config";
+import morgan from "morgan";
+import IRequestBodyType from "./types/body.type";
 
 (async () => {
+  const server = express();
+  server.use(morgan('dev'));
   const app = new App({
-    appId: 123,
-    privateKey: "-----BEGIN PRIVATE KEY-----\n...",
+    appId: config.APP_ID,
+    privateKey: config.APP_PRIVATE_KEY,
     oauth: {
-      clientId: "0123",
-      clientSecret: "0123secret",
+      clientId: "0",
+      clientSecret: "0",
     },
     webhooks: {
-      secret: "secret",
+      secret: config.WEBHOOK_SECRET,
     },
   });
 
   const { data } = await app.octokit.request("/app");
   console.log("authenticated as %s", data.name);
-  for await (const { installation } of app.eachInstallation.iterator()) {
-    for await (const { octokit, repository } of app.eachRepository.iterator({
-      installationId: installation.id,
-    })) {
-      await octokit.request("POST /repos/{owner}/{repo}/dispatches", {
-        owner: repository.owner.login,
-        repo: repository.name,
-        event_type: "my_event",
-      });
-    }
-  }
 
-  app.webhooks.on("issues.opened", async ({ octokit, payload }) => {
-    await octokit.request(
-      "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
-      {
-        owner: payload.repository.owner.login,
-        repo: payload.repository.name,
-        issue_number: payload.issue.number,
-        body: "Hello World!",
-      }
-    );
+
+  server.use(express.json());
+  server.use(createNodeMiddleware(app));
+
+  app.webhooks.onAny(({ id, name, payload }) => {
+    console.log(name, "event received");
+    console.log(id, name, payload);
   });
 
-  app.oauth.on("token", async ({ token, octokit }) => {
-    const { data } = await octokit.request("GET /user");
-    console.log(`Token retrieved for ${data.login}`);
+  server.get('/', (req: Request, res: Response) => {
+    console.log(req.path);
+    res.status(200).json({
+      msg: "hello world"
+    })
+  })
+
+  server.post('/', (req: Request, res: Response) => {
+    const {
+      pull_request, action
+    } = req.body as IRequestBodyType;
+
+    const { assignee, head, base } = pull_request;
+    const { login } = assignee;
+
+    // console.log({
+    //   action,
+    //   login,
+    //   head,
+    //   base
+    // });
+    res.status(200)
   });
 
-  http.createServer(createNodeMiddleware(app)).listen(3000);
-  // can now receive requests at /api/github/*
-})()
+  server.listen(3000, () => {
+    console.log("server listening on port")
+  })
+})();

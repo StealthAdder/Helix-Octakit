@@ -1,0 +1,33 @@
+{
+  "name": "helix-octakit",
+  "version": "1.0.0",
+  "description": "helix github automation bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --files --respawn src/index.ts",
+    "clean": "rimraf dist/",
+    "build": "npm run clean && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StealthAdder/Helix-Octakit.git"
+  },
+  "keywords": [
+    "bot",
+    "github"
+  ],
+  "author": "StealthAdder",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/StealthAdder/Helix-Octakit/issues"
+  },
+  "homepage": "https://github.com/StealthAdder/Helix-Octakit#readme",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.54.0",
+    "@typescript-eslint/parser": "^5.54.0",
+    "eslint": "^8.35.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.9.5"
+  }
+}

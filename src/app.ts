@@ -1,58 +1,32 @@
-import { App, createNodeMiddleware } from '@octokit/app';
-import express, { Request, Response } from 'express';
+import { Webhooks, createNodeMiddleware } from '@octokit/webhooks';
 import config from './config';
-import morgan from 'morgan';
+import express from 'express';
 
 (async () => {
   const server = express();
-  server.use(morgan('dev'));
-  const app = new App({
-    appId: config.APP_ID,
-    privateKey: config.APP_PRIVATE_KEY,
-    oauth: {
-      clientId: '0',
-      clientSecret: '0',
-    },
-    webhooks: {
-      secret: '0',
-    },
+  const webhooks = new Webhooks({
+    secret: config.WEBHOOK_SECRET,
   });
-
-  const { data } = await app.octokit.request('/app');
-  console.log('authenticated as %s', data.name);
 
   server.use(express.json());
-  // server.use(createNodeMiddleware(app));
+  const middleware = createNodeMiddleware(webhooks, { path: '/' });
+  server.use(middleware);
 
-  // app.webhooks.onAny(({ id, name, payload }) => {
-  //   console.log(name, 'event received');
-  //   console.log(id, name, payload);
-  // });
-
-  app.webhooks.on('ping', ({ id, name, octokit, payload }) => {
-    console.log(id, name, payload, octokit);
+  server.get('/', (req, res) => {
+    return res.status(200);
   });
 
-  server.get('/', (req: Request, res: Response) => {
-    console.log(req.path);
-    res.status(200).json({
-      msg: 'hello world',
-    });
-  });
-
-  server.post('/', (req: Request, res: Response) => {
-    // const { pull_request, action } = req.body as IRequestBodyType;
-
-    // const { assignee, head, base } = pull_request;
-    // const { login } = assignee;
-
-    // console.log(login);
-    console.log('clg: ', req.body);
-
+  server.post('/', (req, res) => {
+    console.log('clg:', req.body);
     return res.status(200).json({ msg: 'test successful' });
   });
 
+  webhooks.onAny(({ id, name, payload }) => {
+    console.log(name, 'event received');
+    console.log(payload, 'payload received');
+  });
+
   server.listen(3000, () => {
-    console.log('server listening on port');
+    console.log('server listening on port 3000');
   });
 })();

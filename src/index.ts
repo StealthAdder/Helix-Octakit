@@ -36,7 +36,41 @@ import morgan from 'morgan';
 
   app.webhooks.onAny(({ id, name, payload }) => {
     console.log(name, 'event received');
-    console.log(payload, 'payload received');
+  });
+
+  app.webhooks.on("pull_request.opened", async ({ id, name, octokit, payload }) => {
+    console.log(name, 'event received', id, 'event id');
+    console.log(JSON.stringify(payload));
+
+    // await octokit.request(
+    //   "POST /repos/{owner}/{repo}/pulls/comments/",
+    //   {
+
+    //   }
+    // );
+  });
+
+  app.webhooks.on("pull_request.closed", async ({ id, name, octokit, payload }) => {
+    console.log(name, 'event received', id, 'event id');
+    // console.log(JSON.stringify(payload));
+
+    // await octokit.request('POST /repos/{owner}/{repo}/pulls', {
+    //   owner: 'OWNER',
+    //   repo: 'REPO',
+    //   title: 'staging -> main | Bot PR',
+    //   body: 'Please pull these awesome changes in!',
+    //   head: 'development',
+    //   base: 'staging',
+    //   headers: {
+    //     'X-GitHub-Api-Version': '2022-11-28'
+    //   }
+    // })
+  });
+
+  app.webhooks.on("pull_request.reopened", ({ id, name, octokit, payload }) => {
+    console.log(name, 'event received', id, 'event id');
+    console.log(JSON.stringify(payload));
+    // await octokit
   });
 
   server.listen(3000, () => {

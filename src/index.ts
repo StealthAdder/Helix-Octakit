@@ -1,5 +1,5 @@
 import { App } from '@octokit/app';
-import { Webhooks, createNodeMiddleware } from '@octokit/webhooks'
+import { createNodeMiddleware } from '@octokit/webhooks'
 import express, { Request, Response } from 'express';
 import config from './config';
 import morgan from 'morgan';
@@ -29,25 +29,26 @@ import morgan from 'morgan';
     return res.status(200);
   });
 
-  server.post('/', (req, res) => {
+  server.post('/', (req: Request, res: Response) => {
     console.log('clg:', req.body);
     return res.status(200).json({ msg: 'test successful' });
-  });
-
-  app.webhooks.onAny(({ id, name, payload }) => {
-    console.log(name, 'event received');
   });
 
   app.webhooks.on("pull_request.opened", async ({ id, name, octokit, payload }) => {
     console.log(name, 'event received', id, 'event id');
     console.log(JSON.stringify(payload));
 
-    // await octokit.request(
-    //   "POST /repos/{owner}/{repo}/pulls/comments/",
-    //   {
 
-    //   }
-    // );
+    const data = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      path: 'package.json',
+      headers: {
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    });
+
+    console.log(JSON.stringify(data));
   });
 
   app.webhooks.on("pull_request.closed", async ({ id, name, octokit, payload }) => {
@@ -64,13 +65,29 @@ import morgan from 'morgan';
     //   headers: {
     //     'X-GitHub-Api-Version': '2022-11-28'
     //   }
-    // })
+    // });
+
+    const data = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      path: 'package.json',
+      headers: {
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    });
+
+    // download_url
+
+    console.log(JSON.stringify(data));
   });
 
   app.webhooks.on("pull_request.reopened", ({ id, name, octokit, payload }) => {
     console.log(name, 'event received', id, 'event id');
     console.log(JSON.stringify(payload));
-    // await octokit
+  });
+
+  app.webhooks.onAny(({ id, name, payload }) => {
+    console.log(name, 'event received');
   });
 
   server.listen(3000, () => {

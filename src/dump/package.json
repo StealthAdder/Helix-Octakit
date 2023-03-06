@@ -1,0 +1,23 @@
+{
+  "name": "git-version-test",
+  "version": "1.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StealthAdder/git-version-test.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/StealthAdder/git-version-test/issues"
+  },
+  "homepage": "https://github.com/StealthAdder/git-version-test#readme",
+  "devDependencies": {
+    "husky": "^8.0.3"
+  }
+}

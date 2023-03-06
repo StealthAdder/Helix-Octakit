@@ -3,6 +3,10 @@ import { createNodeMiddleware } from '@octokit/webhooks'
 import express, { Request, Response } from 'express';
 import config from './config';
 import morgan from 'morgan';
+import getFile from './service/getFile.service';
+import { OctokitResponse } from '@octokit/types';
+import bumpVersion from './service/bumpVersion.service';
+import commitFileToRepo from './service/commitFileToRepo.service';
 
 (async () => {
   const server = express();
@@ -55,35 +59,54 @@ import morgan from 'morgan';
     console.log(name, 'event received', id, 'event id');
     // console.log(JSON.stringify(payload));
 
-    // await octokit.request('POST /repos/{owner}/{repo}/pulls', {
-    //   owner: 'OWNER',
-    //   repo: 'REPO',
-    //   title: 'staging -> main | Bot PR',
-    //   body: 'Please pull these awesome changes in!',
-    //   head: 'development',
-    //   base: 'staging',
-    //   headers: {
-    //     'X-GitHub-Api-Version': '2022-11-28'
-    //   }
-    // });
+    const fileName = 'package.json';
 
-    const data = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+    const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
-      path: 'package.json',
+      path: fileName,
       headers: {
         'X-GitHub-Api-Version': '2022-11-28'
       }
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
 
-    // download_url
+    console.log(data.download_url);
+    console.log(data);
 
-    console.log(JSON.stringify(data));
+    if (data.download_url) {
+      await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
+        await bumpVersion('main', `./src/dump/${fileName}`);
+        await commitFileToRepo(`./src/dump/${fileName}`, data.sha);
+      });
+    }
   });
 
-  app.webhooks.on("pull_request.reopened", ({ id, name, octokit, payload }) => {
+  app.webhooks.on("pull_request.reopened", async ({ id, name, octokit, payload }) => {
     console.log(name, 'event received', id, 'event id');
-    console.log(JSON.stringify(payload));
+    // console.log(JSON.stringify(payload));
+
+    const fileName = 'package.json';
+
+    const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      path: fileName,
+      headers: {
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+    console.log(data.download_url);
+    console.log(data);
+
+    if (data.download_url) {
+      await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
+        await bumpVersion('main', `./src/dump/${fileName}`);
+        await commitFileToRepo(`./src/dump/${fileName}`, data.sha);
+      });
+    }
   });
 
   app.webhooks.onAny(({ id, name, payload }) => {

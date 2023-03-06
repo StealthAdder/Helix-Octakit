@@ -65,6 +65,7 @@ import commitFileToRepo from './service/commitFileToRepo.service';
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
       path: fileName,
+      ref: 'development',
       headers: {
         'X-GitHub-Api-Version': '2022-11-28'
       }
@@ -77,7 +78,21 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     if (data.download_url) {
       await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
         await bumpVersion('main', `./src/dump/${fileName}`);
-        await commitFileToRepo(`./src/dump/${fileName}`, data.sha);
+        const base64Data = await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
+        const response = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
+          owner: payload.repository.owner.login,
+          repo: payload.repository.name,
+          path: fileName,
+          ref: 'development',
+          message: 'commit yo',
+          content: base64Data,
+          sha: data.sha,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
+
+        console.log(response);
       });
     }
   });
@@ -88,10 +103,12 @@ import commitFileToRepo from './service/commitFileToRepo.service';
 
     const fileName = 'package.json';
 
+    // /repos/{owner}/{repo}/contents/{path}
     const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
       path: fileName,
+      ref: 'development',
       headers: {
         'X-GitHub-Api-Version': '2022-11-28'
       }
@@ -104,8 +121,23 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     if (data.download_url) {
       await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
         await bumpVersion('main', `./src/dump/${fileName}`);
-        await commitFileToRepo(`./src/dump/${fileName}`, data.sha);
+        const base64Data = await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
+        const response = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
+          owner: payload.repository.owner.login,
+          repo: payload.repository.name,
+          path: fileName,
+          ref: 'development',
+          message: 'commit yo',
+          content: base64Data,
+          sha: data.sha,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
+
+        console.log(response);
       });
+
     }
   });
 

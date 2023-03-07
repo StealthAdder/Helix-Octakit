@@ -1,21 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
-import { Octokit } from "@octokit/core";
 
-const commitFileToRepo = async (filePath: string, fileSha: string, octokit: Octokit, payload: any, fileName: string): Promise<void> => {
+import { ICommitFileToRepoParams } from '../types/index.type';
+
+// filePath: string, fileSha: string, octokit: Octokit, payload: any, fileName: string
+const commitFileToRepo = async (params: ICommitFileToRepoParams): Promise<boolean> => {
+  const { octokit, owner, repo, path, sha, filePath } = params;
   return new Promise((resolve, reject) => {
     fs.readFile(filePath, async (err: any, data: any) => {
-      if (err) reject(err);
+      if (err) reject(false);
 
       const base64Data = data.toString('base64');
-
       const response = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
-        owner: payload.repository.owner.login,
-        repo: payload.repository.name,
-        path: fileName,
+        owner,
+        repo,
+        path,
         message: 'bot - committed - package.json',
         content: base64Data,
-        sha: fileSha,
+        sha,
         branch: 'development',
         headers: {
           'X-GitHub-Api-Version': '2022-11-28'
@@ -23,7 +25,7 @@ const commitFileToRepo = async (filePath: string, fileSha: string, octokit: Octo
       });
 
       console.log(response);
-      resolve();
+      resolve(true);
     });
   });
 }

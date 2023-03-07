@@ -59,6 +59,7 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     // console.log(JSON.stringify(payload));
 
     const fileName = 'package.json';
+    const filePath = `./src/dump/${fileName}`
 
     const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
       owner: payload.repository.owner.login,
@@ -78,7 +79,14 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     if (data.download_url) {
       await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
         await bumpVersion('main', `./src/dump/${fileName}`);
-        await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
+        await commitFileToRepo({
+          filePath,
+          octokit,
+          owner: payload.repository.owner.login,
+          repo: payload.repository.name,
+          path: fileName,
+          sha: data.sha
+        });
       });
     }
   });
@@ -88,6 +96,7 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     // console.log(JSON.stringify(payload));
 
     const fileName = 'package.json';
+    const filePath = `./src/dump/${fileName}`
 
     // /repos/{owner}/{repo}/contents/{path}
     const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
@@ -106,9 +115,16 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     console.log(data);
 
     if (data.download_url) {
-      await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
-        await bumpVersion('main', `./src/dump/${fileName}`);
-        await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
+      await getFile(String(data.download_url), filePath, async () => {
+        await bumpVersion('main', filePath);
+        await commitFileToRepo({
+          filePath,
+          octokit,
+          owner: payload.repository.owner.login,
+          repo: payload.repository.name,
+          path: fileName,
+          sha: data.sha
+        });
       });
 
     }

@@ -6,7 +6,8 @@ const config = {
   NODE_ENV: process.env.NODE_ENV!,
   APP_PRIVATE_KEY: process.env.APP_PRIVATE_KEY!,
   APP_ID: process.env.APP_ID!,
-  WEBHOOK_SECRET: process.env.WEBHOOK_SECRET!
+  WEBHOOK_SECRET: process.env.WEBHOOK_SECRET!,
+  BASE_REF: 'refs/heads/staging'
 }
 
 export default config;

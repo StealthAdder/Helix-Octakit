@@ -6,5 +6,6 @@ export interface ICommitFileToRepoParams {
   repo: string;
   path: string;
   sha: string;
-  filePath: string
+  filePath: string;
+  branchName: string;
 }

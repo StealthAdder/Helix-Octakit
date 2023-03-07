@@ -37,102 +37,49 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     return res.status(200).json({ msg: 'test successful' });
   });
 
-  app.webhooks.on("pull_request.opened", async ({ id, name, octokit, payload }) => {
-    console.log(name, 'event received', id, 'event id');
-    console.log(JSON.stringify(payload));
-
-
-    const data = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      path: 'package.json',
-      headers: {
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
-    });
-
-    console.log(JSON.stringify(data));
-  });
-
   app.webhooks.on("pull_request.closed", async ({ id, name, octokit, payload }) => {
-    console.log(name, 'event received', id, 'event id');
-    // console.log(JSON.stringify(payload));
+    console.log(name);
+    console.log(id);
+    const { pull_request } = payload;
+    const { merged, labels } = pull_request;
 
-    const fileName = 'package.json';
-    const filePath = `./src/dump/${fileName}`
+    if (merged && labels[0].name === "dev -> staging") {
+      const fileName = 'package.json';
+      const branchName = 'staging';
+      const filePath = `./src/dump/${fileName}`
 
-    const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      path: fileName,
-      ref: 'development',
-      headers: {
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }) as any;
+      const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        path: fileName,
+        ref: branchName,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any;
 
-    console.log(data.download_url);
-    console.log(data.sha);
-    console.log(data);
-
-    if (data.download_url) {
-      await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
-        await bumpVersion('main', `./src/dump/${fileName}`);
-        await commitFileToRepo({
-          filePath,
-          octokit,
-          owner: payload.repository.owner.login,
-          repo: payload.repository.name,
-          path: fileName,
-          sha: data.sha
+      if (data.download_url) {
+        await getFile(String(data.download_url), filePath, async () => {
+          await bumpVersion(branchName, filePath);
+          await commitFileToRepo({
+            filePath,
+            octokit,
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+            path: fileName,
+            branchName,
+            sha: data.sha
+          });
         });
-      });
-    }
-  });
-
-  app.webhooks.on("pull_request.reopened", async ({ id, name, octokit, payload }) => {
-    console.log(name, 'event received', id, 'event id');
-    // console.log(JSON.stringify(payload));
-
-    const fileName = 'package.json';
-    const filePath = `./src/dump/${fileName}`
-
-    // /repos/{owner}/{repo}/contents/{path}
-    const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      path: fileName,
-      ref: 'development',
-      headers: {
-        'X-GitHub-Api-Version': '2022-11-28'
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }) as any;
-
-    console.log(data.download_url);
-    console.log(data.sha);
-    console.log(data);
-
-    if (data.download_url) {
-      await getFile(String(data.download_url), filePath, async () => {
-        await bumpVersion('main', filePath);
-        await commitFileToRepo({
-          filePath,
-          octokit,
-          owner: payload.repository.owner.login,
-          repo: payload.repository.name,
-          path: fileName,
-          sha: data.sha
-        });
-      });
-
     }
-  });
+  })
 
-  app.webhooks.onAny(({ id, name, payload }) => {
-    console.log(name, 'event received');
-  });
+  // app.webhooks.onAny(({ id, name, payload }) => {
+  //   console.log(name, 'event received');
+  //   console.log(JSON.stringify(payload));
+  // });
 
   server.listen(3000, () => {
     console.log('server listening on port 3000 - app one');

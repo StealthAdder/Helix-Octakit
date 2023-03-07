@@ -5,7 +5,7 @@ import { ICommitFileToRepoParams } from '../types/index.type';
 
 // filePath: string, fileSha: string, octokit: Octokit, payload: any, fileName: string
 const commitFileToRepo = async (params: ICommitFileToRepoParams): Promise<boolean> => {
-  const { octokit, owner, repo, path, sha, filePath } = params;
+  const { octokit, owner, repo, path, sha, filePath, branchName } = params;
   return new Promise((resolve, reject) => {
     fs.readFile(filePath, async (err: any, data: any) => {
       if (err) reject(false);
@@ -15,10 +15,10 @@ const commitFileToRepo = async (params: ICommitFileToRepoParams): Promise<boolea
         owner,
         repo,
         path,
-        message: 'bot - committed - package.json',
+        message: 'version bump - merged PR - BOT',
         content: base64Data,
         sha,
-        branch: 'development',
+        branch: branchName,
         headers: {
           'X-GitHub-Api-Version': '2022-11-28'
         }

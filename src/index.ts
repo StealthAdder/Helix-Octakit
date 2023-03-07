@@ -4,7 +4,6 @@ import express, { Request, Response } from 'express';
 import config from './config';
 import morgan from 'morgan';
 import getFile from './service/getFile.service';
-import { OctokitResponse } from '@octokit/types';
 import bumpVersion from './service/bumpVersion.service';
 import commitFileToRepo from './service/commitFileToRepo.service';
 
@@ -73,26 +72,13 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     }) as any;
 
     console.log(data.download_url);
+    console.log(data.sha);
     console.log(data);
 
     if (data.download_url) {
       await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
         await bumpVersion('main', `./src/dump/${fileName}`);
-        const base64Data = await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
-        const response = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
-          owner: payload.repository.owner.login,
-          repo: payload.repository.name,
-          path: fileName,
-          ref: 'development',
-          message: 'commit yo',
-          content: base64Data,
-          sha: data.sha,
-          headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
-          }
-        });
-
-        console.log(response);
+        await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
       });
     }
   });
@@ -116,26 +102,13 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     }) as any;
 
     console.log(data.download_url);
+    console.log(data.sha);
     console.log(data);
 
     if (data.download_url) {
       await getFile(String(data.download_url), `./src/dump/${fileName}`, async () => {
         await bumpVersion('main', `./src/dump/${fileName}`);
-        const base64Data = await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
-        const response = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
-          owner: payload.repository.owner.login,
-          repo: payload.repository.name,
-          path: fileName,
-          ref: 'development',
-          message: 'commit yo',
-          content: base64Data,
-          sha: data.sha,
-          headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
-          }
-        });
-
-        console.log(response);
+        await commitFileToRepo(`./src/dump/${fileName}`, data.sha, octokit, payload, fileName);
       });
 
     }

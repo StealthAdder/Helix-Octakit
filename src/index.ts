@@ -3,9 +3,12 @@ import { createNodeMiddleware } from '@octokit/webhooks'
 import express, { Request, Response } from 'express';
 import config from './config';
 import morgan from 'morgan';
-import getFile from './service/getFile.service';
-import bumpVersion from './service/bumpVersion.service';
-import commitFileToRepo from './service/commitFileToRepo.service';
+// import getFile from './service/getFile.service';
+// import bumpVersion from './service/bumpVersion.service';
+// import commitFileToRepo from './service/commitFileToRepo.service';
+import createNewBranch from './service/createNewBranch.service';
+import getBranch from './service/getBranch.service';
+import updatePR from './service/updatePR.service';
 
 (async () => {
   const server = express();
@@ -37,49 +40,102 @@ import commitFileToRepo from './service/commitFileToRepo.service';
     return res.status(200).json({ msg: 'test successful' });
   });
 
-  app.webhooks.on("pull_request.closed", async ({ id, name, octokit, payload }) => {
+  // app.webhooks.on("pull_request.closed", async ({ id, name, octokit, payload }) => {
+  //   console.log(name);
+  //   console.log(id);
+  //   const { pull_request } = payload;
+  //   const { merged, labels } = pull_request;
+
+  //   if (merged && labels[0].name === "dev -> staging") {
+  //     const fileName = 'package.json';
+  //     const branchName = 'staging';
+  //     const filePath = `./src/dump/${fileName}`
+
+  //     const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+  //       owner: payload.repository.owner.login,
+  //       repo: payload.repository.name,
+  //       path: fileName,
+  //       ref: branchName,
+  //       headers: {
+  //         'X-GitHub-Api-Version': '2022-11-28'
+  //       }
+  //       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //     }) as any;
+
+  //     if (data.download_url) {
+  //       await getFile(String(data.download_url), filePath, async () => {
+  //         await bumpVersion(branchName, filePath);
+  //         await commitFileToRepo({
+  //           filePath,
+  //           octokit,
+  //           owner: payload.repository.owner.login,
+  //           repo: payload.repository.name,
+  //           path: fileName,
+  //           branchName,
+  //           sha: data.sha
+  //         });
+  //       });
+  //     }
+  //   }
+  // });
+
+
+  // app.webhooks.on("push", async ({ id, name, octokit, payload }) => {
+  //   console.log("push", name);
+
+  //   // console.log(response);
+  // })
+
+
+  app.webhooks.on("pull_request.opened", async ({ id, name, octokit, payload }) => {
     console.log(name);
-    console.log(id);
+
     const { pull_request } = payload;
-    const { merged, labels } = pull_request;
 
-    if (merged && labels[0].name === "dev -> staging") {
-      const fileName = 'package.json';
-      const branchName = 'staging';
-      const filePath = `./src/dump/${fileName}`
+    const { labels, base, head } = pull_request;
 
-      const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-        owner: payload.repository.owner.login,
-        repo: payload.repository.name,
-        path: fileName,
-        ref: branchName,
-        headers: {
-          'X-GitHub-Api-Version': '2022-11-28'
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      }) as any;
-
-      if (data.download_url) {
-        await getFile(String(data.download_url), filePath, async () => {
-          await bumpVersion(branchName, filePath);
-          await commitFileToRepo({
-            filePath,
-            octokit,
-            owner: payload.repository.owner.login,
-            repo: payload.repository.name,
-            path: fileName,
-            branchName,
-            sha: data.sha
-          });
-        });
-      }
+    if (labels[0].name !== 'development-pr') {
+      return;
     }
-  })
+
+    // create new branch from development;
+    const { commit } = await getBranch({
+      branch: 'development',
+      octokit,
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+    });
+
+    await createNewBranch({
+      octokit,
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      sha: commit.sha,
+      headName: head.ref,
+      prNumber: String(pull_request.number)
+    });
+
+    // update the PR to change base branch
+    await updatePR({
+      headName: head.ref,
+      octokit,
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      pull_number: String(pull_request.number)
+    });
+  });
 
   // app.webhooks.onAny(({ id, name, payload }) => {
   //   console.log(name, 'event received');
   //   console.log(JSON.stringify(payload));
   // });
+
+  app.webhooks.on("pull_request.closed", ({ id, name, octokit, payload }) => {
+    const { pull_request } = payload;
+
+    // base is the branch name which should be deleted if not deleted;
+    const { merged, number, base } = pull_request;
+  })
 
   server.listen(3000, () => {
     console.log('server listening on port 3000 - app one');

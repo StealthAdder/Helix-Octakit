@@ -33,3 +33,20 @@ export interface IUpdatePRParams {
   pull_number: string;
   headName: string;
 }
+
+export interface IDeleteBranchParams {
+  octokit: Octokit;
+  owner: string;
+  repo: string;
+  branchName: string;
+}
+
+export interface ICreatePRParams {
+  octokit: Octokit;
+  owner: string;
+  repo: string;
+  title: string;
+  body: string;
+  head: string;
+  base: string;
+}

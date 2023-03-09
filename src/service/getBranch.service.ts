@@ -2,7 +2,7 @@ import { IGetBranchParams } from "../types/index.type";
 
 const getBranch = async (params: IGetBranchParams) => {
   const { branch, octokit, owner, repo } = params;
-  const { data } = await octokit.request('GET /repos/{owner}/{repo}/branches/{branch}', {
+  const { data, status } = await octokit.request('GET /repos/{owner}/{repo}/branches/{branch}', {
     owner,
     repo,
     branch,
@@ -11,12 +11,10 @@ const getBranch = async (params: IGetBranchParams) => {
     }
   });
 
-
-  if (!data) {
-    throw new Error(`Branch ${branch} not found`)
-  }
-
-  return data;
+  return {
+    ...data,
+    status
+  };
 }
 
 export default getBranch;

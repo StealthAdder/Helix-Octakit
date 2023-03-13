@@ -25,7 +25,11 @@ const commitFileToRepo = async (params: ICommitFileToRepoParams): Promise<boolea
       });
 
       console.log(response);
-      resolve(true);
+
+      fs.unlink(filePath, (err: any) => {
+        if (err) reject(false);
+        resolve(true);
+      })
     });
   });
 }

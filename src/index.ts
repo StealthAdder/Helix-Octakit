@@ -68,6 +68,10 @@ import createPR from './service/createPR.service';
     }
 
     if (merged && title.startsWith('Automated PR')) {
+      if (config.RESTRICTED_BRANCHES.includes(head.ref)) {
+        console.log('head was a restricted branch so will not be deleted');
+        return;
+      }
       // delete the branch temp branch
       await deleteBranch({
         branchName: head.ref,
@@ -76,6 +80,11 @@ import createPR from './service/createPR.service';
         repo: payload.repository.name,
       });
       console.log('exited - PR was merged so the branch will be deleted')
+      return;
+    }
+
+    if (config.RESTRICTED_BRANCHES.includes(head.ref) && config.RESTRICTED_BRANCHES.includes(base.ref)) {
+      console.log('no version bump - RESTRICTED_BRANCHES');
       return;
     }
 
@@ -115,21 +124,13 @@ import createPR from './service/createPR.service';
             repo: payload.repository.name,
             head: base.ref,
             base: 'development',
-            body: `Auto-Generated PR \nThis PR was created because PR-${number} was successfully merged by ${merged_by?.login}`,
+            body: `Auto-Generated PR \nThis PR was created because PR-#${number} was successfully merged by ${merged_by?.login}`,
             title: `Automated PR ${number} | ${base.ref} -> development`
           });
         });
       }
     }
   });
-
-
-  // app.webhooks.on("push", async ({ id, name, octokit, payload }) => {
-  //   console.log("push", name);
-
-  //   // console.log(response);
-  // })
-
 
   app.webhooks.on("pull_request.opened", async ({ id, name, octokit, payload }) => {
     console.log(name);
@@ -144,6 +145,12 @@ import createPR from './service/createPR.service';
     }
 
     if (labels[0]?.name !== 'development-pr') {
+      console.log('exited - ignored');
+      return;
+    }
+
+    if (config.RESTRICTED_BRANCHES.includes(head.ref) && config.RESTRICTED_BRANCHES.includes(base.ref)) {
+      console.log('exited - RESTRICTED_BRANCHES');
       return;
     }
 
@@ -177,81 +184,6 @@ import createPR from './service/createPR.service';
   // app.webhooks.onAny(({ id, name, payload }) => {
   //   console.log(name, 'event received');
   //   console.log(JSON.stringify(payload));
-  // });
-
-
-  // app.webhooks.on("pull_request.labeled", async ({ id, name, octokit, payload }) => {
-  //   const { pull_request, label } = payload;
-
-  //   const { head } = pull_request;
-
-  //   // if label - development-pr
-  //   if (label.name !== 'development-pr') {
-  //     console.log('label was added but its not - development-pr');
-  //     return;
-  //   }
-
-  //   // check if the branch is created or not;
-
-  //   const tempBranch = await getBranch({
-  //     branch: `${payload.repository.name}-${pull_request.number}-${head.ref}`,
-  //     octokit,
-  //     owner: payload.repository.owner.login,
-  //     repo: payload.repository.name,
-  //   });
-
-  //   if (tempBranch.status === 200) {
-  //     await updatePR({
-  //       headName: head.ref,
-  //       octokit,
-  //       owner: payload.repository.owner.login,
-  //       repo: payload.repository.name,
-  //       pull_number: String(pull_request.number)
-  //     });
-  //     return;
-  //   }
-
-  //   const { commit } = await getBranch({
-  //     branch: 'development',
-  //     octokit,
-  //     owner: payload.repository.owner.login,
-  //     repo: payload.repository.name,
-  //   });
-
-  //   await createNewBranch({
-  //     octokit,
-  //     owner: payload.repository.owner.login,
-  //     repo: payload.repository.name,
-  //     sha: commit.sha,
-  //     headName: head.ref,
-  //     prNumber: String(pull_request.number)
-  //   });
-
-  //   // update the PR to change base branch
-  //   await updatePR({
-  //     headName: head.ref,
-  //     octokit,
-  //     owner: payload.repository.owner.login,
-  //     repo: payload.repository.name,
-  //     pull_number: String(pull_request.number)
-  //   });
-  // });
-
-  // app.webhooks.on("pull_request.closed", async ({ id, name, octokit, payload }) => {
-  //   const { pull_request } = payload;
-
-  //   // base is the branch name which should be deleted if not deleted;
-  //   const { merged, base } = pull_request;
-
-  //   if (merged === false) {
-  //     // delete the branch if it exists
-  //     await deleteBranch({
-  //       branchName: base.ref,
-  //       octokit,
-  //       owner: payload.repository.owner.login,
-  //       repo: payload.repository.name,
-  //     });
-  //   }
   // });
 
   server.listen(3000, () => {
